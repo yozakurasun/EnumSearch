@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using UnityEngine;
 using UnityEditor;
@@ -10,6 +10,7 @@ public class SearchablePopup : PopupWindowContent
     private readonly string[] _names; //選択肢
     private readonly int _currentIndex; //現在選択中
     private readonly Action<int> _onSelect; //選択時のコールバック
+    private readonly EnumData _targetEnumData; //対象のスクリプトとEnum情報
 
     private Vector2 _scrollPosition; //スクロール位置
 
@@ -20,9 +21,10 @@ public class SearchablePopup : PopupWindowContent
     /// <param name="names">候補</param>
     /// <param name="currentIndex">現在選択中</param>
     /// <param name="onSelect">選択時のコールバック</param>
-    public static void Show(Rect rect, string[] names, int currentIndex, Action<int> onSelect)
+    /// <param name="targetScript">対象のスクリプト</param>
+    public static void Show(Rect rect, string[] names, int currentIndex, Action<int> onSelect, EnumData targetEnumData)
     {
-        var window = new SearchablePopup(names, currentIndex, onSelect);
+        var window = new SearchablePopup(names, currentIndex, onSelect, targetEnumData);
         PopupWindow.Show(rect, window);
     }
 
@@ -32,11 +34,13 @@ public class SearchablePopup : PopupWindowContent
     /// <param name="names">候補</param>
     /// <param name="currentIndex">現在選択中</param>
     /// <param name="onSelect">選択時のコールバック</param>
-    private SearchablePopup(string[] names, int currentIndex, Action<int> onSelect)
+    /// <param name="targetScript">対象のスクリプト</param>
+    private SearchablePopup(string[] names, int currentIndex, Action<int> onSelect, EnumData enumData)
     {
         this._names = names;
         this._currentIndex = currentIndex;
         this._onSelect = onSelect;
+        this._targetEnumData = enumData;
     }
 
     /// <summary>
@@ -64,7 +68,7 @@ public class SearchablePopup : PopupWindowContent
             GUI.FocusControl("SearchBar");
 
         // スクロール範囲設定
-        Rect scrollRect = new Rect(0, 30, rect.width, rect.height - 30);
+        Rect scrollRect = new Rect(0, 30, rect.width, rect.height - 60);
         Rect contentRect = new Rect(0, 0, rect.width - 20, _names.Length * 20);
 
         _scrollPosition = GUI.BeginScrollView(scrollRect, _scrollPosition, contentRect);
@@ -94,6 +98,18 @@ public class SearchablePopup : PopupWindowContent
             y += 20;
         }
         GUI.EndScrollView();
+
+        //Enum追加用ボタン
+        Rect enumGenerateButton = new Rect(5, rect.height - 25, rect.width - 10, 20);
+        if (GUI.Button(enumGenerateButton, "Enum追加"))
+        {
+            if(_targetEnumData == null || _targetEnumData.Script == null)
+            {
+                Debug.LogError("対象のスクリプトが見つかりませんでした。");
+                return;
+            }
+            EnumGeneratorWindow.Open(_targetEnumData.Script, _targetEnumData.EnumType);
+        }
     }
 }
 #endif
