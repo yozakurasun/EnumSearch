@@ -31,6 +31,7 @@ public class EnumGeneratorWindow : EditorWindow
 
         GUILayout.Space(10);
 
+        // 対象Enum名
         EditorGUILayout.LabelField("対象のEnum", _targetEnumType?.Name ?? "(None)");
 
         GUILayout.Space(10);

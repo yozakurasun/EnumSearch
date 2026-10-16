@@ -10,6 +10,11 @@ public static class EnumGenerator
 {
     private static string _enumName;
 
+    /// <summary>
+    /// Enum追加、及びスクリプト書き換え関数
+    /// </summary>
+    /// <param name="enumData">Enum内を書き換える為に必要なデータ</param>
+    /// <param name="newNames">新規追加するEnum名</param>
     public static void Generate(EnumData enumData, string[] newNames)
     {
         if (enumData == null || enumData.Script == null)
@@ -18,6 +23,7 @@ public static class EnumGenerator
             return;
         }
 
+        // スクリプト読み込み、文字列に変換
         string path = AssetDatabase.GetAssetPath(enumData.Script);
         string code = File.ReadAllText(path);
 
@@ -44,7 +50,7 @@ public static class EnumGenerator
             .Distinct()
             .ToList();
 
-        // 新規＋既存マージ
+        // 新規＋既存をマージ
         var merged = existing
             .Concat(newNames)
             .Where(n => !string.IsNullOrWhiteSpace(n))
@@ -83,27 +89,43 @@ public static class EnumGenerator
         return input.Length > 0 && char.IsDigit(input[0]);
     }
 
+    /// <summary>
+    /// Enumのフォーマットに沿って書き換え
+    /// </summary>
+    /// <param name="header">対象のEnumに使われている修飾子</param>
+    /// <param name="enumName">Enum名</param>
+    /// <param name="values">EnumList</param>
+    /// <param name="indent">Enum記述時のインデント</param>
+    /// <returns></returns>
     private static string FormatEnum(string header, string enumName, List<string> values, string indent)
     {
         string innerIndent = indent + "    ";
 
         var lines = new List<string>();
 
+        // 最初の列とデフォルト値のNone = 0書き込み
         lines.Add($"{header}");
         lines.Add($"{indent}{{");
         lines.Add($"{innerIndent}None = 0,");
 
         for (int i = 0; i < values.Count; i++)
-        {
+        {// EnumList順に書き込み
             lines.Add($"{innerIndent}{values[i]} = {i + 1},");
         }
 
+        // 最後の列と最後の値Max = EnumList.Count + 1書き込み
         lines.Add($"{innerIndent}Max = {values.Count + 1}");
         lines.Add($"{indent}}}");
 
         return string.Join("\n", lines);
     }
 
+    /// <summary>
+    /// Enumを書き込むときのインデントを取得する関数
+    /// </summary>
+    /// <param name="code">スクリプトの文字列</param>
+    /// <param name="index"></param>
+    /// <returns></returns>
     private static string GetIndent(string code, int index)
     {
         int lineStart = code.LastIndexOf('\n', index);
@@ -119,6 +141,9 @@ public static class EnumGenerator
     }
 }
 
+/// <summary>
+/// 追加対象のEnumを書き込む為に必要なデータ
+/// </summary>
 public class EnumData
 {
     public MonoScript Script;

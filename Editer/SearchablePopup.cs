@@ -25,15 +25,16 @@ public class SearchablePopup : PopupWindowContent
     /// <param name="targetScript">対象のスクリプト</param>
     public static void Show(Rect rect, string[] names, int currentIndex, Action<int> onSelect, EnumSearchAttribute attr, FieldInfo fieldInfo)
     {
-        var script = GetScriptByName(attr.ScriptName);
-        var enumType = fieldInfo.FieldType;
-        EnumData enumData = new EnumData { Script = script, EnumType = enumType };
-
-        if (script == null)
+        EnumData enumData = new EnumData();
+        MonoScript script = null;
+        Type enumType = null;
+        if (attr.ScriptName != string.Empty)
         {
-            Debug.LogError("Enum定義スクリプトが見つかりませんでした: " + attr.ScriptName);
-            return;
+            script = GetScriptByName(attr.ScriptName);
+            enumType = fieldInfo.FieldType;           
         }
+        enumData = new EnumData { Script = script, EnumType = enumType };
+
         var window = new SearchablePopup(names, currentIndex, onSelect, enumData);
         PopupWindow.Show(rect, window);
     }
@@ -109,6 +110,8 @@ public class SearchablePopup : PopupWindowContent
         }
         GUI.EndScrollView();
 
+        if(_targetEnumData.Script == null) return;//スクリプト名が記入されていなければEnum追加ボタンを出さない
+
         //Enum追加用ボタン
         Rect enumGenerateButton = new Rect(5, rect.height - 25, rect.width - 10, 20);
         if (GUI.Button(enumGenerateButton, "Enum追加"))
@@ -122,6 +125,11 @@ public class SearchablePopup : PopupWindowContent
         }
     }
 
+    /// <summary>
+    /// スクリプト名からMonoScript取得
+    /// </summary>
+    /// <param name="scriptName">スクリプト名</param>
+    /// <returns>MonoScript</returns>
     private static MonoScript GetScriptByName(string scriptName)
     {
         var guids = AssetDatabase.FindAssets($"{scriptName} t:MonoScript");
