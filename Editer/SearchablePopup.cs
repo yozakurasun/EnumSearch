@@ -1,8 +1,9 @@
 ﻿#if UNITY_EDITOR
 using System;
-using UnityEngine;
-using UnityEditor;
 using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEngine;
 
 public class SearchablePopup : PopupWindowContent
 {
@@ -22,9 +23,18 @@ public class SearchablePopup : PopupWindowContent
     /// <param name="currentIndex">現在選択中</param>
     /// <param name="onSelect">選択時のコールバック</param>
     /// <param name="targetScript">対象のスクリプト</param>
-    public static void Show(Rect rect, string[] names, int currentIndex, Action<int> onSelect, EnumData targetEnumData)
+    public static void Show(Rect rect, string[] names, int currentIndex, Action<int> onSelect, EnumSearchAttribute attr, FieldInfo fieldInfo)
     {
-        var window = new SearchablePopup(names, currentIndex, onSelect, targetEnumData);
+        var script = GetScriptByName(attr.ScriptName);
+        var enumType = fieldInfo.FieldType;
+        EnumData enumData = new EnumData { Script = script, EnumType = enumType };
+
+        if (script == null)
+        {
+            Debug.LogError("Enum定義スクリプトが見つかりませんでした: " + attr.ScriptName);
+            return;
+        }
+        var window = new SearchablePopup(names, currentIndex, onSelect, enumData);
         PopupWindow.Show(rect, window);
     }
 
@@ -68,7 +78,7 @@ public class SearchablePopup : PopupWindowContent
             GUI.FocusControl("SearchBar");
 
         // スクロール範囲設定
-        Rect scrollRect = new Rect(0, 30, rect.width, rect.height - 60);
+        Rect scrollRect = new Rect(-2.5f, 30, rect.width, rect.height - 60);
         Rect contentRect = new Rect(0, 0, rect.width - 20, _names.Length * 20);
 
         _scrollPosition = GUI.BeginScrollView(scrollRect, _scrollPosition, contentRect);
@@ -86,7 +96,7 @@ public class SearchablePopup : PopupWindowContent
         float y = 0;
         foreach (var item in filtered)
         {
-            Rect buttonRect = new Rect(5, y, contentRect.width - 10, 20);
+            Rect buttonRect = new Rect(5, y, contentRect.width, 20);
             bool isSelected = (item.index == _currentIndex);
 
             if (GUI.Button(buttonRect, (isSelected ? "→ " : "") + item.name))
@@ -103,13 +113,23 @@ public class SearchablePopup : PopupWindowContent
         Rect enumGenerateButton = new Rect(5, rect.height - 25, rect.width - 10, 20);
         if (GUI.Button(enumGenerateButton, "Enum追加"))
         {
-            if(_targetEnumData == null || _targetEnumData.Script == null)
+            if (_targetEnumData == null || _targetEnumData.Script == null)
             {
                 Debug.LogError("対象のスクリプトが見つかりませんでした。");
                 return;
             }
             EnumGeneratorWindow.Open(_targetEnumData.Script, _targetEnumData.EnumType);
         }
+    }
+
+    private static MonoScript GetScriptByName(string scriptName)
+    {
+        var guids = AssetDatabase.FindAssets($"{scriptName} t:MonoScript");
+
+        if (guids.Length == 0) return null;
+
+        var path = AssetDatabase.GUIDToAssetPath(guids[0]);
+        return AssetDatabase.LoadAssetAtPath<MonoScript>(path);
     }
 }
 #endif

@@ -14,15 +14,6 @@ public class EnumSearchDrawer : PropertyDrawer
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
         var attr = attribute as EnumSearchAttribute;
-        var script = GetScriptByName(attr.ScriptName);
-        var enumType = fieldInfo.FieldType;
-        EnumData enumData = new EnumData { Script = script, EnumType = enumType };
-
-        if (script == null)
-        {
-            Debug.LogError("Enum定義スクリプトが見つかりませんでした: " + attr.ScriptName);
-            return;
-        }
 
         //インスペクターに変数のラベルと選択中の要素を表示
         EditorGUI.BeginProperty(position, label, property);
@@ -51,21 +42,12 @@ public class EnumSearchDrawer : PropertyDrawer
                     property.enumValueIndex = index;
                     property.serializedObject.ApplyModifiedProperties();
                 },
-                enumData
+                attr,
+                fieldInfo
             );
         }
 
         EditorGUI.EndProperty();
-    }
-
-    private MonoScript GetScriptByName(string scriptName)
-    {
-        var guids = AssetDatabase.FindAssets($"{scriptName} t:MonoScript");
-
-        if (guids.Length == 0) return null;
-
-        var path = AssetDatabase.GUIDToAssetPath(guids[0]);
-        return AssetDatabase.LoadAssetAtPath<MonoScript>(path);
     }
 }
 #endif

@@ -15,6 +15,8 @@ public class EnumGeneratorWindow : EditorWindow
         var window = GetWindow<EnumGeneratorWindow>("Enum Generator");
         window._targetEnumScript = targetScript;
         window._targetEnumType = enumType;
+        window.minSize = new Vector2(300, 300);
+        window.maxSize = new Vector2(500, 1080);
     }
 
     private void OnGUI()
